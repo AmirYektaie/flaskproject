@@ -4,7 +4,9 @@ from flask_mysqldb import MySQL
 from wtforms import Form, StringField, TextAreaField, PasswordField, validators
 from passlib.hash import sha256_crypt
 from functools import wraps
+from firebase import firebase
 app = Flask(__name__)
+app.config.from_object(__name__)
 
 # Config MySQL
 app.config['MYSQL_HOST'] = 'localhost'
@@ -39,8 +41,6 @@ def is_logged_in(f):
             flash('Unauthorized, Please login', 'danger')
             return redirect(url_for('index'))
     return wrap
-
-#check level of users
 
 
 # Articles
@@ -188,7 +188,7 @@ def dashboard():
 # Article Form Class
 class ArticleForm(Form):
     title = StringField('Title', [validators.Length(min=1, max=200)])
-    body = TextAreaField('Body', [validators.Length(min=30)])
+    body = StringField('Body', [validators.Length(min=30)])
 
 # Add Article
 @app.route('/add_article', methods=['GET', 'POST'])
@@ -277,32 +277,24 @@ def delete_article(id):
 
     return redirect(url_for('dashboard'))
 
-# Comment Form Class
-class CommentForm(Form):
-    text = StringField('text', [validators.Length(min=1, max=200)])
-    author = TextAreaField('author', [validators.Length(min=30)])
 
+firebase = \
+    firebase.FirebaseApplication('https://comment-9068d.firebaseio.com', None)
 
 #comment
 @app.route('/messages')
 def messages():
-    form = CommentForm(request.form)
-    text = form.text.data
-    author = form.author.data
-    
-    # Create Cursor
-    cur = mysql.connection.cursor()
+  result = firebase.get('/messages', None)
+  return render_template('list.html', messages=result)
 
-        # Execute
-    cur.execute("INSERT INTO messages(id, text, author) VALUES(%s, %s, %s)",(id, text, author['username']))
-
-        # Commit to DB
-    mysql.connection.commit()
-
-        #Close connection
-    cur.close()
-    return render_template('list.html', messages=messages)
-
+@app.route('/submit_message', methods=['POST'])
+def submit_message():
+  message = {
+    'body': request.form['message'],
+    'who': request.form['who']
+  }
+  firebase.post('/messages', message)
+  return redirect(url_for('messages'))
 
 if __name__ == '__main__':
     app.secret_key='secret123'
