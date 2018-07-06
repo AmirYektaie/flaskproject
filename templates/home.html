@@ -1,0 +1,12 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+  <div class="jumbotron text-center">
+    <h1>رزومه دانشجویان قم</h1>
+    {% if session.logged_in == NULL %}
+
+      <a href="/register" class="btn btn-primary btn-lg">ثبت نام</a>
+      <a href="/login" class="btn btn-success btn-lg">ورود</a>
+    {% endif %}
+  </div>
+{% endblock %}
